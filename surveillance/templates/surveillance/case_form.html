@@ -1,0 +1,100 @@
+{% extends "surveillance/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header py-3">
+        <i class="bi bi-file-earmark-plus"></i> {{ title }}
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Disease <span class="text-danger">*</span></label>
+              {{ form.disease }}
+              {% if form.disease.errors %}<div class="text-danger small">{{ form.disease.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">District <span class="text-danger">*</span></label>
+              {{ form.district }}
+              {% if form.district.errors %}<div class="text-danger small">{{ form.district.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Ward / Locality</label>
+              {{ form.ward }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Number of Cases <span class="text-danger">*</span></label>
+              {{ form.case_count }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Date of Onset <span class="text-danger">*</span></label>
+              {{ form.onset_date }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Report Date</label>
+              {{ form.report_date }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Status</label>
+              {{ form.status }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Severity</label>
+              {{ form.severity }}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Symptoms Observed</label>
+              {{ form.symptoms }}
+            </div>
+
+            <div class="col-md-4">
+              <div class="form-check mt-2">
+                {{ form.lab_confirmed }}
+                <label class="form-check-label fw-semibold" for="{{ form.lab_confirmed.id_for_label }}">
+                  Lab Confirmed
+                </label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check mt-2">
+                {{ form.hospitalized }}
+                <label class="form-check-label fw-semibold" for="{{ form.hospitalized.id_for_label }}">
+                  Hospitalized
+                </label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Deaths</label>
+              {{ form.deaths }}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Additional Notes</label>
+              {{ form.notes }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'case_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-brand px-4">
+              <i class="bi bi-check-lg"></i> Save Report
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

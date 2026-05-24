@@ -1,0 +1,26 @@
+{% extends "surveillance/base.html" %}
+{% block title %}Delete Threshold{% endblock %}
+{% block page_title %}Delete Threshold{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card border-danger">
+      <div class="card-header text-danger py-3"><i class="bi bi-exclamation-triangle"></i> Confirm Deletion</div>
+      <div class="card-body">
+        <p>Delete this threshold?</p>
+        <ul class="list-unstyled mb-3">
+          <li><strong>Disease:</strong> {{ threshold.disease.name }}</li>
+          <li><strong>Scope:</strong> {{ threshold.district.name|default:"Nationwide" }}</li>
+          <li><strong>Trigger:</strong> {{ threshold.cases_per_week }} cases/week</li>
+        </ul>
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Yes, delete</button>
+          <a href="{% url 'threshold_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

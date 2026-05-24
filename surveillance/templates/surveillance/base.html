@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SurakshaNet{% endblock %} — Disease Surveillance Nepal</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    :root {
+      --sidebar-width: 230px;
+      --brand-green: #1D9E75;
+      --brand-dark: #0f3d2e;
+      --brand-red: #E24B4A;
+      --brand-amber: #EF9F27;
+    }
+
+    body { background: #f4f6f9; font-size: 0.92rem; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh;
+      width: var(--sidebar-width); background: var(--brand-dark);
+      display: flex; flex-direction: column; z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar-brand {
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-brand h5 { color: #fff; font-weight: 600; margin: 0; font-size: 1rem; }
+    .sidebar-brand small { color: rgba(255,255,255,0.5); font-size: 0.7rem; }
+
+    .sidebar-nav { padding: 12px 0; flex: 1; }
+    .nav-section-label {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: .08em;
+      color: rgba(255,255,255,0.35); padding: 10px 20px 4px;
+    }
+    .sidebar-nav .nav-link {
+      color: rgba(255,255,255,0.65); padding: 8px 20px;
+      border-radius: 0; display: flex; align-items: center; gap: 10px;
+      font-size: 0.875rem; transition: all 0.15s;
+    }
+    .sidebar-nav .nav-link:hover { color: #fff; background: rgba(255,255,255,0.06); }
+    .sidebar-nav .nav-link.active { color: #fff; background: var(--brand-green); }
+    .sidebar-nav .nav-link i { font-size: 1rem; width: 18px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5); font-size: 0.75rem;
+    }
+
+    /* ── Main content ── */
+    #main { margin-left: var(--sidebar-width); min-height: 100vh; }
+
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 10px 24px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-title { font-weight: 600; font-size: 1rem; color: #111; }
+
+    .page-body { padding: 24px; }
+
+    /* ── Cards ── */
+    .stat-card {
+      background: #fff; border-radius: 10px; border: 1px solid #e5e7eb;
+      padding: 18px 20px;
+    }
+    .stat-card .stat-label { font-size: 0.75rem; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing:.04em; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: #111; line-height: 1.1; margin: 4px 0; }
+    .stat-card .stat-change { font-size: 0.78rem; }
+    .stat-card .stat-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    }
+
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; }
+    .card-header { background: #fff; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 0.875rem; }
+
+    /* ── Alert badges ── */
+    .badge-critical { background: #fde8e8; color: #991b1b; }
+    .badge-warning  { background: #fef3c7; color: #92400e; }
+    .badge-info     { background: #dbeafe; color: #1e40af; }
+
+    .alert-row-critical { border-left: 3px solid var(--brand-red); }
+    .alert-row-warning  { border-left: 3px solid var(--brand-amber); }
+    .alert-row-info     { border-left: 3px solid #378ADD; }
+
+    /* ── Table ── */
+    .table th { font-size: 0.75rem; text-transform: uppercase; letter-spacing:.04em; color: #6b7280; font-weight: 600; }
+    .table td { vertical-align: middle; font-size: 0.875rem; }
+
+    /* ── Map ── */
+    #map { height: 520px; border-radius: 10px; }
+
+    /* ── Misc ── */
+    .btn-brand { background: var(--brand-green); color: #fff; border: none; }
+    .btn-brand:hover { background: #178a65; color: #fff; }
+
+    .status-badge {
+      font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-100%); }
+      #main { margin-left: 0; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<!-- ── Sidebar ── -->
+<nav id="sidebar">
+  <div class="sidebar-brand">
+    <h5><i class="bi bi-shield-check text-success"></i> SurakshaNet</h5>
+    <small>Disease Surveillance · Nepal</small>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a href="{% url 'map' %}" class="nav-link {% if request.resolver_match.url_name == 'map' %}active{% endif %}">
+      <i class="bi bi-geo-alt"></i> GIS Map
+    </a>
+
+    <div class="nav-section-label">Surveillance</div>
+    <a href="{% url 'case_list' %}" class="nav-link {% if 'case' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-file-earmark-medical"></i> Case Reports
+    </a>
+    <a href="{% url 'case_create' %}" class="nav-link">
+      <i class="bi bi-plus-circle"></i> Report New Case
+    </a>
+
+    <div class="nav-section-label">Alerts</div>
+    <a href="{% url 'alert_list' %}" class="nav-link {% if 'alert' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-bell"></i> Active Alerts
+      {% with count=active_alert_count %}
+        {% if count %}<span class="badge bg-danger ms-auto">{{ count }}</span>{% endif %}
+      {% endwith %}
+    </a>
+    <a href="{% url 'threshold_list' %}" class="nav-link {% if 'threshold' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-sliders"></i> Thresholds
+    </a>
+
+    <div class="nav-section-label">Admin</div>
+    <a href="/admin/" class="nav-link"><i class="bi bi-gear"></i> Admin panel</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.username }}<br>
+    <a href="{% url 'logout' %}" class="text-danger text-decoration-none small">
+      <i class="bi bi-box-arrow-left"></i> Logout
+    </a>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<div id="main">
+  <div class="topbar">
+    <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+    <div class="d-flex align-items-center gap-3">
+      {% if messages %}
+        {% for message in messages %}
+          <span class="alert alert-{{ message.tags|default:'info' }} py-1 px-3 mb-0 small">{{ message }}</span>
+        {% endfor %}
+      {% endif %}
+      <span class="text-muted small"><i class="bi bi-clock"></i> {{ now|date:"D, d M Y" }}</span>
+    </div>
+  </div>
+
+  <div class="page-body">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,102 @@
+{% extends "surveillance/base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block page_title %}Disease Alerts{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <span class="text-muted small">{{ active_alerts|length }} active · {{ resolved_alerts|length }} resolved</span>
+  <form method="post" action="{% url 'run_alert_check' %}">
+    {% csrf_token %}
+    <button class="btn btn-outline-warning btn-sm">
+      <i class="bi bi-arrow-repeat"></i> Run Alert Check
+    </button>
+  </form>
+</div>
+
+<!-- Active alerts -->
+<div class="card mb-4">
+  <div class="card-header py-3 d-flex align-items-center gap-2">
+    <i class="bi bi-bell-fill text-danger"></i> Active Alerts
+    <span class="badge bg-danger">{{ active_alerts|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Level</th>
+          <th>Title</th>
+          <th>District</th>
+          <th>Cases</th>
+          <th>Threshold</th>
+          <th>Triggered</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alert in active_alerts %}
+        <tr class="alert-row-{{ alert.level }}">
+          <td>
+            <span class="badge badge-{{ alert.level }} text-uppercase status-badge">{{ alert.level }}</span>
+          </td>
+          <td>
+            <div class="fw-semibold small">{{ alert.title }}</div>
+            <div class="text-muted" style="font-size:.75rem">{{ alert.message|truncatechars:80 }}</div>
+          </td>
+          <td>{{ alert.district.name }}</td>
+          <td><strong>{{ alert.case_count }}</strong></td>
+          <td class="text-muted">{{ alert.threshold }}/week</td>
+          <td class="text-muted small">{{ alert.triggered_at|date:"d M Y H:i" }}</td>
+          <td>
+            <form method="post" action="{% url 'alert_acknowledge' alert.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-warning py-0 px-2" title="Acknowledge">
+                <i class="bi bi-check"></i>
+              </button>
+            </form>
+            <form method="post" action="{% url 'alert_resolve' alert.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-success py-0 px-2" title="Resolve">
+                <i class="bi bi-check-all"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5 text-muted">
+            <i class="bi bi-check-circle-fill text-success display-6 d-block mb-2"></i>
+            No active alerts. All clear!
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Resolved -->
+<div class="card">
+  <div class="card-header py-3"><i class="bi bi-archive"></i> Resolved / Acknowledged</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>Level</th><th>Title</th><th>District</th><th>Cases</th><th>Status</th><th>Triggered</th></tr>
+      </thead>
+      <tbody>
+        {% for alert in resolved_alerts %}
+        <tr>
+          <td><span class="badge badge-{{ alert.level }} text-uppercase status-badge">{{ alert.level }}</span></td>
+          <td class="small">{{ alert.title }}</td>
+          <td>{{ alert.district.name }}</td>
+          <td>{{ alert.case_count }}</td>
+          <td><span class="badge bg-secondary text-uppercase" style="font-size:.65rem">{{ alert.status }}</span></td>
+          <td class="text-muted small">{{ alert.triggered_at|date:"d M Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted text-center py-3">No resolved alerts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

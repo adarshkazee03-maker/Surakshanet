@@ -1,0 +1,208 @@
+{% extends "surveillance/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ── Stat cards ── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card d-flex justify-content-between align-items-start">
+      <div>
+        <div class="stat-label">Cases this week</div>
+        <div class="stat-value">{{ stats.total_cases_week }}</div>
+        <div class="stat-change text-muted">Past 7 days</div>
+      </div>
+      <div class="stat-icon" style="background:#fde8e8;color:#E24B4A"><i class="bi bi-virus"></i></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card d-flex justify-content-between align-items-start">
+      <div>
+        <div class="stat-label">Active outbreaks</div>
+        <div class="stat-value">{{ stats.active_outbreaks }}</div>
+        <div class="stat-change text-danger"><i class="bi bi-exclamation-triangle"></i> Requires attention</div>
+      </div>
+      <div class="stat-icon" style="background:#fef3c7;color:#EF9F27"><i class="bi bi-exclamation-triangle"></i></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card d-flex justify-content-between align-items-start">
+      <div>
+        <div class="stat-label">Districts affected</div>
+        <div class="stat-value">{{ stats.districts_affected }}</div>
+        <div class="stat-change text-muted">This week</div>
+      </div>
+      <div class="stat-icon" style="background:#dbeafe;color:#378ADD"><i class="bi bi-geo-alt"></i></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card d-flex justify-content-between align-items-start">
+      <div>
+        <div class="stat-label">Recovered (30d)</div>
+        <div class="stat-value">{{ stats.recovered_month }}</div>
+        <div class="stat-change text-success"><i class="bi bi-check-circle"></i> Past 30 days</div>
+      </div>
+      <div class="stat-icon" style="background:#d1fae5;color:#1D9E75"><i class="bi bi-heart-pulse"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts row ── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up"></i> Weekly Disease Trends</span>
+        <select id="trendDiseaseFilter" class="form-select form-select-sm w-auto">
+          <option value="">All diseases</option>
+          {% for d in diseases %}
+            <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="card-body">
+        <canvas id="trendChart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header py-3"><i class="bi bi-bar-chart"></i> Top Hotspot Districts</div>
+      <div class="card-body">
+        {% if top_districts %}
+          {% for d in top_districts %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>{{ d.name }}</span><span class="fw-semibold">{{ d.count }}</span>
+            </div>
+            <div class="progress" style="height:6px">
+              <div class="progress-bar" style="width:{{ d.count|floatformat:0 }}%;background:#E24B4A;max-width:100%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted small text-center mt-4">No case data yet this week.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Alerts + Recent cases ── -->
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bell"></i> Active Alerts</span>
+        <a href="{% url 'alert_list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for alert in recent_alerts %}
+        <div class="list-group-item alert-row-{{ alert.level }} px-3 py-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold small">{{ alert.title }}</div>
+              <div class="text-muted" style="font-size:.75rem">
+                {{ alert.case_count }} cases · {{ alert.triggered_at|date:"d M, H:i" }}
+              </div>
+            </div>
+            <span class="badge badge-{{ alert.level }} status-badge text-uppercase">{{ alert.level }}</span>
+          </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-muted small text-center py-4">
+          <i class="bi bi-check-circle text-success"></i> No active alerts
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-medical"></i> Recent Case Reports</span>
+        <a href="{% url 'case_list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for case in recent_cases %}
+        <div class="list-group-item px-3 py-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold small">{{ case.disease.name }} — {{ case.district.name }}</div>
+              <div class="text-muted" style="font-size:.75rem">
+                {{ case.case_count }} case(s) · {{ case.report_date|date:"d M Y" }}
+                {% if case.ward %} · {{ case.ward }}{% endif %}
+              </div>
+            </div>
+            <span class="badge
+              {% if case.severity == 'critical' %}bg-danger
+              {% elif case.severity == 'severe' %}bg-warning text-dark
+              {% elif case.severity == 'moderate' %}bg-info text-dark
+              {% else %}bg-secondary{% endif %}
+              status-badge">{{ case.severity }}</span>
+          </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-muted small text-center py-4">No cases reported yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const trendData = {{ disease_trends_json|safe }};
+const trendLabels = {{ trend_labels_json|safe }};
+
+let trendChart;
+
+function buildChart(datasets) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: datasets.map(d => ({
+        label: d.label,
+        data: d.data,
+        borderColor: d.color,
+        backgroundColor: d.color + '22',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+        x: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+buildChart(trendData);
+
+document.getElementById('trendDiseaseFilter').addEventListener('change', function() {
+  const diseaseId = this.value;
+  fetch(`/api/trend/?disease=${diseaseId}`)
+    .then(r => r.json())
+    .then(data => {
+      const color = '#1D9E75';
+      const label = this.options[this.selectedIndex].text;
+      const datasets = diseaseId
+        ? [{ label, data: data.trend.map(w => w.count), color }]
+        : trendData;
+      buildChart(datasets);
+    });
+});
+</script>
+{% endblock %}

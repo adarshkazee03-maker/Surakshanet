@@ -1,0 +1,106 @@
+{% extends "surveillance/base.html" %}
+{% block title %}GIS Map{% endblock %}
+{% block page_title %}GIS Disease Hotspot Map{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-map"></i> Nepal Disease Hotspot Map — Past 7 Days</span>
+        <div class="d-flex gap-2 small">
+          <span class="badge" style="background:#fde8e8;color:#991b1b"><i class="bi bi-circle-fill"></i> Critical</span>
+          <span class="badge" style="background:#fef3c7;color:#92400e"><i class="bi bi-circle-fill"></i> Warning</span>
+          <span class="badge" style="background:#dbeafe;color:#1e40af"><i class="bi bi-circle-fill"></i> Info</span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card h-100">
+      <div class="card-header py-3"><i class="bi bi-list-ul"></i> District Summary</div>
+      <div class="card-body p-0">
+        <div id="district-list" class="list-group list-group-flush" style="font-size:.8rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const map = L.map('map').setView([28.3949, 84.1240], 7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+  maxZoom: 18,
+}).addTo(map);
+
+const levelColors = {
+  critical: '#E24B4A',
+  warning: '#EF9F27',
+  info: '#378ADD',
+};
+
+function getRadius(cases) {
+  if (cases > 100) return 30;
+  if (cases > 50) return 22;
+  if (cases > 20) return 16;
+  if (cases > 10) return 12;
+  return 8;
+}
+
+fetch('/api/map-data/')
+  .then(r => r.json())
+  .then(data => {
+    const list = document.getElementById('district-list');
+
+    if (!data.districts.length) {
+      list.innerHTML = '<div class="list-group-item text-muted small text-center py-4">No case data this week.</div>';
+    }
+
+    data.districts
+      .sort((a, b) => b.cases - a.cases)
+      .forEach(d => {
+        const color = levelColors[d.level] || '#378ADD';
+
+        // Map circle
+        const circle = L.circleMarker([d.lat, d.lng], {
+          radius: getRadius(d.cases),
+          fillColor: color,
+          color: '#fff',
+          weight: 1.5,
+          fillOpacity: 0.75,
+        }).addTo(map);
+
+        circle.bindPopup(`
+          <strong>${d.name}</strong><br>
+          Province: ${d.province}<br>
+          Cases (7d): <b>${d.cases}</b><br>
+          Alert level: <b style="color:${color}">${d.level.toUpperCase()}</b>
+        `);
+
+        // Sidebar row
+        const row = document.createElement('div');
+        row.className = 'list-group-item py-2 px-3';
+        row.innerHTML = `
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold">${d.name}</span>
+            <span class="badge" style="background:${color}22;color:${color}">${d.cases}</span>
+          </div>
+          <div class="text-muted" style="font-size:.72rem">${d.province}</div>
+        `;
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => {
+          map.setView([d.lat, d.lng], 10);
+          circle.openPopup();
+        });
+        list.appendChild(row);
+      });
+  });
+</script>
+{% endblock %}
